@@ -1,6 +1,6 @@
 ## webmify
 
-Fix sites to make WebMs playable in Edge. Only VP9 without audio (single video track) works for a moment.
+Fix sites to make WebMs playable in Edge. Only VP9 WebMs works for a moment.
 
 ### Supported sites
 
@@ -16,7 +16,7 @@ Fix sites to make WebMs playable in Edge. Only VP9 without audio (single video t
 
 ### Technical details
 
-Latest Edge has support for VP9/Opus MSE tracks but not for a common WebM files. This script patches site logic and loads WebMs via MSE API so they can be played in Edge. Unfortunately Edge doesn't support SourceBuffer with VP9 and Opus tracks muxed together so currently only WebMs with single VP9 track work.
+Latest Edge has support for VP9/Opus MSE tracks but not for a common WebM files. This script patches site logic and loads WebMs via MSE API so they can be played in Edge.
 
 ### License
 
