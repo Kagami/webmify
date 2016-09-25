@@ -60,7 +60,7 @@ Remuxer.prototype.readUInt = function(size) {
 }
 
 Remuxer.prototype.readString = function(size) {
-  // TODO: Remove zero-padding?
+  // TODO: Remove zero-padding per spec?
   var s = "";
   while (size--) {
     s += String.fromCharCode(this.data[this.cur++]);
@@ -111,6 +111,7 @@ Remuxer.prototype._void = function(start, end) {
   this.cur = savedCur;
 }
 
+// TODO: Error-resilience.
 Remuxer.prototype.process = function() {
   var start = 0;
   var element = 0;
