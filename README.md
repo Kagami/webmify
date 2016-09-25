@@ -16,7 +16,7 @@ Fix sites to make WebMs playable in Edge. Only VP9 WebMs works for a moment.
 
 ### Demo
 
-![](edge.png)
+[![](edge.png)](https://raw.githubusercontent.com/Kagami/webmify/master/edge.png)
 
 ### Technical details
 
