@@ -12,7 +12,7 @@ Fix sites to make WebMs playable in Edge. Only VP9 WebMs works for a moment.
 * Set "Always on" option for VP9 in about:flags
 * Restart Edge
 * Install [Tampermonkey](https://www.microsoft.com/en-us/store/p/tampermonkey/9nblggh5162s)
-* Install [webmify.user.js](webmify.user.js)
+* Install [webmify.user.js](https://raw.githubusercontent.com/Kagami/webmify/master/webmify.user.js)
 
 ### Demo
 
