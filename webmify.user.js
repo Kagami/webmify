@@ -233,10 +233,13 @@ function playMSE(video, url) {
   var mediaSource = new MediaSource();
   video.src = URL.createObjectURL(mediaSource);
   mediaSource.addEventListener("sourceopen", function() {
+    // Not possible to abort fetch request (when user loads new WebM)
+    // right now: <https://github.com/whatwg/fetch/issues/27>.
+    // It shouldn't cause issues except additional traffic/cpu load
+    // because Makaba creates(?) new <video> element each time.
     fetch(url, {credentials: "same-origin"}).then(function(res) {
       return res.arrayBuffer();
     }).then(function(mixed) {
-      // TODO: Display error if neither VP9 nor Opus track exists.
       var tracks = Remuxer.split(new Uint8Array(mixed));
       var videoSource = null;
       var audioSource = null;
@@ -264,6 +267,13 @@ function playMSE(video, url) {
         });
         audioSource.appendBuffer(tracks.opus);
       }
+
+      if (!tracks.vp9 && !tracks.opus) {
+        // XXX: This actually loads current page as video and it crashes
+        // because mimetype text/html can't be played. Seems like there
+        // is no other way to unload video?
+        video.src = "";
+      }
     }).catch(function(err) {
       console.error(err);
     });
@@ -279,7 +289,6 @@ function initObserver() {
         return node.tagName === "VIDEO";
       }).forEach(function(video) {
         var url = video.querySelector("source").src;
-        // TODO: Cancel Fetch request on close.
         playMSE(video, url);
       });
     });
@@ -291,7 +300,7 @@ function initObserver() {
 // It runs on DOMContentLoaded but Greasemonkey injects callback earlier.
 window.Stage("Edge WebM fix", "webmify", window.Stage.DOMREADY, initObserver);
 
-// playMSE(document.querySelector("video"), "omg.webm");
+// playMSE(document.querySelector("video"), "va7.webm");
 
 // var fs = require("fs");
 // var mixed = new Uint8Array(fs.readFileSync("vp9+vorbis.webm").buffer);
