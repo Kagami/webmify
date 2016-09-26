@@ -5,6 +5,7 @@
 // @downloadURL https://raw.githubusercontent.com/Kagami/webmify/master/webmify.user.js
 // @updateURL   https://raw.githubusercontent.com/Kagami/webmify/master/webmify.user.js
 // @include     https://2ch.hk/*
+// @include     https://2ch.pm/*
 // @version     0.1.0
 // @grant       none
 // ==/UserScript==

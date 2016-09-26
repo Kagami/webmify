@@ -5,6 +5,7 @@ Fix sites to make WebMs playable in Edge. Only VP9 and Opus formats currently wo
 ### Supported sites
 
 * 2ch.hk
+* 2ch.pm
 
 ### Install
 
