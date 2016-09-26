@@ -9,8 +9,9 @@
 // @grant       none
 // ==/UserScript==
 
-function Remuxer(data) {
+function Remuxer(data, keepCodec) {
   this.data = data;
+  this.keepCodec = keepCodec;
   this.cur = 0;
 }
 
@@ -21,6 +22,7 @@ Remuxer.TrackEntry = 0xae;
 Remuxer.TrackNumber = 0xd7;
 Remuxer.CodecID = 0x86;
 Remuxer.CodecID_VP9 = "V_VP9";
+Remuxer.CodecID_Opus = "A_OPUS";
 Remuxer.Cluster = 0x1f43b675;
 Remuxer.SimpleBlock = 0xa3;
 Remuxer.BlockGroup = 0xa0;
@@ -138,7 +140,7 @@ Remuxer.prototype.process = function() {
     }
   };
 
-  while (this.cur <= this.data.length) {
+  while (this.cur < this.data.length) {
     start = this.cur;
     element = this.readID();
     size = this.readSize();
@@ -156,22 +158,22 @@ Remuxer.prototype.process = function() {
       continue;
     case Remuxer.TrackNumber:
       lastTrackNum = this.readUInt(size);
-      break;
+      continue;
     case Remuxer.CodecID:
       lastTrackCodec = this.readString(size);
-      break;
+      continue;
     case Remuxer.Cluster:
       if (wasCluster) continue;
       wasCluster = true;
-      // TODO: Throw if no (VP9) track.
       pushTrack();
       tracks.forEach(function(track) {
-        if (!keepTrack && track.codec === Remuxer.CodecID_VP9) {
+        if (!keepTrack && track.codec === this.keepCodec) {
           keepTrack = track.number;
         } else {
           this._void(track.start, track.end);
         }
       }, this);
+      if (!keepTrack) return tracks;
       continue;
     case Remuxer.BlockGroup:
       // XXX: Seems like Edge doesn't support Block groups:
@@ -193,29 +195,75 @@ Remuxer.prototype.process = function() {
 
     this.cur += size;
   }
+
+  return tracks;
 }
 
+/**
+ * Split passed multitrack WebM into separate VP9 and Opus WebMs.
+ *
+ * @param {Uint8Array} mixed - Input WebM
+ * @return {{vp9: Uint8Array?, opus: Uint8Array?}} Video-only/audio-only WebMs.
+ */
 // TODO: Sequential remuxing.
-// TODO: Extract audio to separate buffer.
-Remuxer.filterVP9 = function(data) {
-  var remuxer = new Remuxer(data);
-  remuxer.process();
+Remuxer.split = function(videoBuffer) {
+  // Create copy because we editing in-place.
+  var audioBuffer = videoBuffer.slice();
+  var videoRemuxer = new Remuxer(videoBuffer, Remuxer.CodecID_VP9);
+  var audioRemuxer = null;
+  var tracks = videoRemuxer.process();
+  var hasVP9 = !!tracks.find(track => track.codec === Remuxer.CodecID_VP9);
+  var hasOpus = !!tracks.find(track => track.codec === Remuxer.CodecID_Opus);
+
+  if (!hasVP9) {
+    videoBuffer = null;
+  }
+  if (hasOpus) {
+    audioRemuxer = new Remuxer(audioBuffer, Remuxer.CodecID_Opus);
+    audioRemuxer.process();
+  } else {
+    // Garbage collect copy.
+    audioBuffer = null;
+  }
+
+  return {vp9: videoBuffer, opus: audioBuffer};
 }
 
 function playMSE(video, url) {
   var mediaSource = new MediaSource();
   video.src = URL.createObjectURL(mediaSource);
   mediaSource.addEventListener("sourceopen", function() {
-    var sourceBuffer = mediaSource.addSourceBuffer('video/webm; codecs="vp9"');
     fetch(url, {credentials: "same-origin"}).then(function(res) {
       return res.arrayBuffer();
-    }).then(function(buffer) {
-      buffer = new Uint8Array(buffer);
-      Remuxer.filterVP9(buffer);
-      sourceBuffer.addEventListener("updateend", function () {
-        mediaSource.endOfStream();
-      });
-      sourceBuffer.appendBuffer(buffer);
+    }).then(function(mixed) {
+      // TODO: Display error if neither VP9 nor Opus track exists.
+      var tracks = Remuxer.split(new Uint8Array(mixed));
+      var videoSource = null;
+      var audioSource = null;
+      var videoUpdated = false;
+      var audioUpdated = false;
+
+      if (tracks.vp9) {
+        videoSource = mediaSource.addSourceBuffer('video/webm; codecs="vp9"');
+        videoSource.addEventListener("updateend", function () {
+          videoUpdated = true;
+          if (!tracks.opus || audioUpdated) {
+            mediaSource.endOfStream();
+          }
+        });
+        videoSource.appendBuffer(tracks.vp9);
+      }
+
+      if (tracks.opus) {
+        audioSource = mediaSource.addSourceBuffer('video/webm; codecs="opus"');
+        audioSource.addEventListener("updateend", function () {
+          audioUpdated = true;
+          if (!tracks.vp9 || videoUpdated) {
+            mediaSource.endOfStream();
+          }
+        });
+        audioSource.appendBuffer(tracks.opus);
+      }
     }).catch(function(err) {
       console.error(err);
     });
@@ -243,9 +291,10 @@ function initObserver() {
 // It runs on DOMContentLoaded but Greasemonkey injects callback earlier.
 window.Stage("Edge WebM fix", "webmify", window.Stage.DOMREADY, initObserver);
 
-// playMSE(document.querySelector("video"), "va5.webm");
+// playMSE(document.querySelector("video"), "omg.webm");
 
 // var fs = require("fs");
-// var data = fs.readFileSync("va5.webm");
-// Remuxer.filterVP9(data);
-// fs.writeFileSync("va5-fixed.webm", data);
+// var mixed = new Uint8Array(fs.readFileSync("vp9+vorbis.webm").buffer);
+// var tracks = Remuxer.split(mixed);
+// if (tracks.vp9) fs.writeFileSync("vp9.webm", Buffer.from(tracks.vp9.buffer));
+// if (tracks.opus) fs.writeFileSync("opus.webm", Buffer.from(tracks.opus.buffer));

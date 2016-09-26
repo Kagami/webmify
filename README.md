@@ -1,6 +1,6 @@
 ## webmify
 
-Fix sites to make WebMs playable in Edge. Only VP9 WebMs currently work.
+Fix sites to make WebMs playable in Edge. Only VP9 and Opus formats currently work.
 
 ### Supported sites
 
