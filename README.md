@@ -20,7 +20,7 @@ Fix sites to make WebMs playable in Edge. Only VP9 and Opus formats currently wo
 
 ### Technical details
 
-Latest Edge has support for VP9/Opus MSE tracks but not for a common WebM files. This script patches site logic and loads WebMs via MSE API so they can be played in Edge.
+Latest Edge has support for VP9/Opus MSE tracks but not for a common WebM files. This script splits WebMs into separate video/audio tracks and loads them via MSE API so it can be played in Edge.
 
 ### License
 
