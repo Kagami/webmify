@@ -287,6 +287,12 @@ function playMSE(video, url) {
 function initObserver() {
   var container = document.getElementById("fullscreen-container");
   if (!container) return;
+  // Temporal hack to make it possible to change volume of the video.
+  // Downside: it's not possible to close webm by clicking on it anymore
+  // (ESC/click on rest of the page still works). Current code allows to
+  // click in the lower 35px of video which works good enough for
+  // Firefox/Chrome but not for Edge. This was reported to webmaster.
+  $(container).off("mousedown");
   var observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
       Array.prototype.filter.call(mutation.addedNodes, function(node) {
