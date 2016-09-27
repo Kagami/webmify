@@ -49,11 +49,11 @@ Remuxer.prototype._readCoded = function(keepMask) {
 
 Remuxer.prototype.readID = function() {
   return this._readCoded(true);
-}
+};
 
 Remuxer.prototype.readSize = function() {
   return this._readCoded(false);
-}
+};
 
 Remuxer.prototype.readUInt = function(size) {
   var n = 0;
@@ -61,7 +61,7 @@ Remuxer.prototype.readUInt = function(size) {
     n = (n << 8) | this.data[this.cur++];
   }
   return n;
-}
+};
 
 Remuxer.prototype.readString = function(size) {
   // TODO: Remove zero-padding per spec?
@@ -70,7 +70,7 @@ Remuxer.prototype.readString = function(size) {
     s += String.fromCharCode(this.data[this.cur++]);
   }
   return s;
-}
+};
 
 // Element IDs are specified in storage format.
 Remuxer.prototype.writeID = function(value) {
@@ -86,7 +86,7 @@ Remuxer.prototype.writeID = function(value) {
     this.data[this.cur++] = (value >> shift) & 0xff;
     shift -= 8;
   } while (len--);
-}
+};
 
 Remuxer.prototype.writeSize = function(value) {
   var n = 0x80;
@@ -105,7 +105,7 @@ Remuxer.prototype.writeSize = function(value) {
     shift -= 8;
     this.data[this.cur++] = (value >> shift) & 0xff;
   }
-}
+};
 
 Remuxer.prototype._void = function(start, end) {
   var savedCur = this.cur;
@@ -113,7 +113,7 @@ Remuxer.prototype._void = function(start, end) {
   this.writeID(Remuxer.Void);
   this.writeSize(end - this.cur);
   this.cur = savedCur;
-}
+};
 
 Remuxer.prototype._hasLacing = function() {
   var flags = 0;
@@ -123,7 +123,7 @@ Remuxer.prototype._hasLacing = function() {
   flags = this.data[this.cur++];
   // 5-6 bits. 00 = no lacing.
   return (flags & 6) > 0;
-}
+};
 
 // TODO: Error-resilience.
 Remuxer.prototype.process = function() {
@@ -230,7 +230,7 @@ Remuxer.prototype.process = function() {
   }
 
   return tracks;
-}
+};
 
 /**
  * Split passed multitrack WebM into separate VP9 and Opus WebMs.
@@ -261,7 +261,7 @@ Remuxer.split = function(videoBuffer) {
   }
 
   return {vp9: videoBuffer, opus: audioBuffer};
-}
+};
 
 function playMSE(video, url) {
   var mediaSource = new MediaSource();
