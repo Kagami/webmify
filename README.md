@@ -19,6 +19,12 @@ Fix sites to make WebMs playable in Edge. Only VP9 and Opus formats currently wo
 
 [![](edge.png)](https://raw.githubusercontent.com/Kagami/webmify/master/edge.png)
 
+### Known issues
+
+* Tracks with lacing don't work (currenly enabled only by mkvmerge for Opus tracks, use `--disable-lacing`; ffmpeg is fine)
+* Sometimes `QuotaExceededError` is raised
+* Entire file need to be downloaded to start playback
+
 ### Technical details
 
 Latest Edge has support for VP9/Opus MSE tracks but not for a common WebM files. This script splits WebMs into separate video/audio tracks and loads them via MSE API so it can be played in Edge.
