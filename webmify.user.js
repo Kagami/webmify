@@ -14,6 +14,7 @@ function Remuxer(data, keepCodec) {
   this.data = data;
   this.keepCodec = keepCodec;
   this.cur = 0;
+  this.lacing = false;
 }
 
 Remuxer.Void = 0xec;
@@ -114,6 +115,16 @@ Remuxer.prototype._void = function(start, end) {
   this.cur = savedCur;
 }
 
+Remuxer.prototype._hasLacing = function() {
+  var flags = 0;
+  // Assuming we're right at Timecode.
+  // Skip Timecode (int16).
+  this.cur += 2;
+  flags = this.data[this.cur++];
+  // 5-6 bits. 00 = no lacing.
+  return (flags & 6) > 0;
+}
+
 // TODO: Error-resilience.
 Remuxer.prototype.process = function() {
   var start = 0;
@@ -130,6 +141,7 @@ Remuxer.prototype.process = function() {
   var lastGroupStart = 0;
   var lastGroupEnd = 0;
   var trackNum = 0;
+  var wasBlock = false;
 
   var pushTrack = function() {
     if (lastTrackStart) {
@@ -184,14 +196,31 @@ Remuxer.prototype.process = function() {
       continue;
     case Remuxer.Block:
       trackNum = this.readSize();
-      if (trackNum != keepTrack) {
+      if (trackNum == keepTrack) {
+        if (!wasBlock && this._hasLacing()) {
+          // Don't need to further process track with lacing because
+          // it's not supported.
+          this.lacing = true;
+          return tracks;
+        }
+        // XXX: Theoretically muxer might use lacing for some blocks,
+        // but the only(?) Matroska lacing implementation is mkvmerge
+        // and it always puts lacing bits.
+        wasBlock = true;
+      } else {
         this._void(lastGroupStart, lastGroupEnd);
       }
       this.cur = lastGroupEnd;
       continue;
     case Remuxer.SimpleBlock:
       trackNum = this.readSize();
-      if (trackNum != keepTrack) {
+      if (trackNum == keepTrack) {
+        if (!wasBlock && this._hasLacing()) {
+          this.lacing = true;
+          return tracks;
+        }
+        wasBlock = true;
+      } else {
         this._void(start, end);
       }
       break;
@@ -219,13 +248,14 @@ Remuxer.split = function(videoBuffer) {
   var hasVP9 = !!tracks.find(track => track.codec === Remuxer.CodecID_VP9);
   var hasOpus = !!tracks.find(track => track.codec === Remuxer.CodecID_Opus);
 
-  if (!hasVP9) {
+  if (!hasVP9 || videoRemuxer.lacing) {
     videoBuffer = null;
   }
   if (hasOpus) {
     audioRemuxer = new Remuxer(audioBuffer, Remuxer.CodecID_Opus);
     audioRemuxer.process();
-  } else {
+  }
+  if (!hasOpus || audioRemuxer.lacing) {
     // Garbage collect copy.
     audioBuffer = null;
   }
@@ -310,10 +340,10 @@ function initObserver() {
 // It runs on DOMContentLoaded but Greasemonkey injects callback earlier.
 window.Stage("Edge WebM fix", "webmify", window.Stage.DOMREADY, initObserver);
 
-// playMSE(document.querySelector("video"), "va7.webm");
+// playMSE(document.querySelector("video"), "vic.webm");
 
 // var fs = require("fs");
-// var mixed = new Uint8Array(fs.readFileSync("vic.webm").buffer);
+// var mixed = new Uint8Array(fs.readFileSync(process.argv[2]).buffer);
 // var tracks = Remuxer.split(mixed);
 // if (tracks.vp9) fs.writeFileSync("vp9.webm", Buffer.from(tracks.vp9.buffer));
 // if (tracks.opus) fs.writeFileSync("opus.webm", Buffer.from(tracks.opus.buffer));
