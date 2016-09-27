@@ -127,7 +127,8 @@ Remuxer.prototype.process = function() {
   var lastTrackNum = 0;
   var lastTrackCodec = 0;
   var keepTrack = 0;
-  var savedCur = 0;
+  var lastGroupStart = 0;
+  var lastGroupEnd = 0;
   var trackNum = 0;
 
   var pushTrack = function() {
@@ -174,27 +175,29 @@ Remuxer.prototype.process = function() {
           this._void(track.start, track.end);
         }
       }, this);
+      // Don't need to further process input without desired track.
       if (!keepTrack) return tracks;
       continue;
     case Remuxer.BlockGroup:
-      // XXX: Seems like Edge doesn't support Block groups:
-      // >MEDIA12598: Independent composition is disabled for video
-      // >rendering. This can negatively impact performance.
-      // Some WebMs contain BlockGroup Element at the very end so we
-      // just skip it.
-      this._void(start, end);
-      break;
+      lastGroupStart = start;
+      lastGroupEnd = end;
+      continue;
+    case Remuxer.Block:
+      trackNum = this.readSize();
+      if (trackNum != keepTrack) {
+        this._void(lastGroupStart, lastGroupEnd);
+      }
+      this.cur = lastGroupEnd;
+      continue;
     case Remuxer.SimpleBlock:
-      savedCur = this.cur;
       trackNum = this.readSize();
       if (trackNum != keepTrack) {
         this._void(start, end);
       }
-      this.cur = savedCur;
       break;
     }
 
-    this.cur += size;
+    this.cur = end;
   }
 
   return tracks;
@@ -304,7 +307,7 @@ window.Stage("Edge WebM fix", "webmify", window.Stage.DOMREADY, initObserver);
 // playMSE(document.querySelector("video"), "va7.webm");
 
 // var fs = require("fs");
-// var mixed = new Uint8Array(fs.readFileSync("vp9+vorbis.webm").buffer);
+// var mixed = new Uint8Array(fs.readFileSync("vic.webm").buffer);
 // var tracks = Remuxer.split(mixed);
 // if (tracks.vp9) fs.writeFileSync("vp9.webm", Buffer.from(tracks.vp9.buffer));
 // if (tracks.opus) fs.writeFileSync("opus.webm", Buffer.from(tracks.opus.buffer));
