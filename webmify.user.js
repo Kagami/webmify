@@ -267,10 +267,6 @@ function playMSE(video, url) {
   var mediaSource = new MediaSource();
   video.src = URL.createObjectURL(mediaSource);
   mediaSource.addEventListener("sourceopen", function() {
-    // Not possible to abort fetch request (when user loads new WebM)
-    // right now: <https://github.com/whatwg/fetch/issues/27>.
-    // It shouldn't cause issues except additional traffic/cpu load
-    // because Makaba creates(?) new <video> element each time.
     fetch(url, {credentials: "same-origin"}).then(function(res) {
       return res.arrayBuffer();
     }).then(function(mixed) {
@@ -314,31 +310,37 @@ function playMSE(video, url) {
   });
 }
 
-function initObserver() {
-  var container = document.getElementById("fullscreen-container");
-  if (!container) return;
-  // Temporal hack to make it possible to change volume of the video.
-  // Downside: it's not possible to close webm by clicking on it anymore
-  // (ESC/click on rest of the page still works). Current code allows to
-  // click in the lower 35px of video which works good enough for
-  // Firefox/Chrome but not for Edge. This was reported to webmaster.
-  $(container).off("mousedown");
-  var observer = new MutationObserver(function(mutations) {
-    mutations.forEach(function(mutation) {
-      Array.prototype.filter.call(mutation.addedNodes, function(node) {
-        return node.tagName === "VIDEO";
-      }).forEach(function(video) {
-        var url = video.querySelector("source").src;
-        playMSE(video, url);
-      });
-    });
-  });
-  observer.observe(container, {childList: true});
+function getDollchanAPI(cb) {
+  function onmessage(e) {
+    if (e.data === "de-answer-api-message" && e.ports) {
+      window.removeEventListener("message", onmessage);
+      clearTimeout(unlistenID);
+      cb(e.ports[0]);
+    }
+  }
+
+  window.addEventListener("message", onmessage);
+  window.postMessage("de-request-api-message", "*");
+  var unlistenID = setTimeout(function() {
+    window.removeEventListener("message", onmessage);
+  }, 5000);
 }
 
-// Makaba API. We need to run _after_ "screenexpand" routine.
-// It runs on DOMContentLoaded but Greasemonkey injects callback earlier.
-window.Stage("Edge WebM fix", "webmify", window.Stage.DOMREADY, initObserver);
+function initDollchanAPI() {
+  getDollchanAPI(function(port) {
+    port.onmessage = function(e) {
+      var msg = e.data;
+      if (msg.name === "expandmedia" && /\.webm$/i.test(msg.data)) {
+        var url = msg.data;
+        var video = document.querySelector("video[src='" + url + "']");
+        playMSE(video, url);
+      }
+    };
+    port.postMessage({name: "registerapi", data: ["expandmedia"]});
+  });
+}
+
+setTimeout(initDollchanAPI, 0);
 
 // playMSE(document.querySelector("video"), "vic.webm");
 
