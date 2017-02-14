@@ -299,9 +299,8 @@ function playMSE(video, url) {
       }
 
       if (!tracks.vp9 && !tracks.opus) {
-        // XXX: This actually loads current page as video and it crashes
-        // because mimetype text/html can't be played. Seems like there
-        // is no other way to unload video?
+        // This actually loads current page as video and it crashes
+        // because mimetype text/html can't be played.
         video.src = "";
       }
     }).catch(function(err) {
