@@ -12,7 +12,7 @@
 // @include     *://dobrochan.org/*
 // @include     *://dobrochan.ru/*
 // @include     *://krautchan.net/*
-// @version     0.2.0
+// @version     0.3.0
 // @grant       none
 // ==/UserScript==
 
