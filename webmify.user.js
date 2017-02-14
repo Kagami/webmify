@@ -319,16 +319,16 @@ function getDollchanAPI(cb) {
   function onmessage(e) {
     if (e.data === "de-answer-api-message" && e.ports) {
       window.removeEventListener("message", onmessage);
-      clearTimeout(unlistenID);
+      clearTimeout(unlistenTID);
       cb(e.ports[0]);
     }
   }
 
-  window.addEventListener("message", onmessage);
-  window.postMessage("de-request-api-message", "*");
-  var unlistenID = setTimeout(function() {
+  var unlistenTID = setTimeout(function() {
     window.removeEventListener("message", onmessage);
   }, 5000);
+  window.addEventListener("message", onmessage);
+  window.postMessage("de-request-api-message", "*");
 }
 
 function initDollchanAPI() {
