@@ -1,11 +1,17 @@
 // ==UserScript==
 // @name        webmify
 // @namespace   https://2ch.hk/webmify
-// @description Allow to watch WebMs in Edge on some sites
+// @description Allow to watch WebMs in Edge
 // @downloadURL https://raw.githubusercontent.com/Kagami/webmify/master/webmify.user.js
 // @updateURL   https://raw.githubusercontent.com/Kagami/webmify/master/webmify.user.js
-// @include     https://2ch.hk/*
-// @include     https://2ch.pm/*
+// @include     *://2ch.hk/*
+// @include     *://2ch.pm/*
+// @include     *://8ch.net/*
+// @include     *://8ch.pl/*
+// @include     *://dobrochan.com/*
+// @include     *://dobrochan.org/*
+// @include     *://dobrochan.ru/*
+// @include     *://krautchan.net/*
 // @version     0.2.0
 // @grant       none
 // ==/UserScript==
